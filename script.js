@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('talentoForm');
     
+    // Establecer fecha mínima como hoy para la fecha de visita
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaVisita').min = today;
+    
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -9,8 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
             id: document.getElementById('id').value,
             telefono: document.getElementById('telefono').value,
             email: document.getElementById('email').value,
+            fechaVisita: document.getElementById('fechaVisita').value,
             pasos: document.getElementById('pasos').value,
-            fecha: new Date().toISOString()
+            fechaRegistro: new Date().toISOString()
         };
         
         // Guardar en localStorage
@@ -22,10 +27,52 @@ document.addEventListener('DOMContentLoaded', function() {
         form.reset();
         consultarTalentos();
     });
-
-    // Cargar talentos al inicio
-    consultarTalentos();
 });
+
+function mostrarFormulario() {
+    document.getElementById('formSection').style.display = 'block';
+    document.getElementById('searchSection').style.display = 'none';
+    document.getElementById('dataframeSection').style.display = 'none';
+}
+
+function mostrarBusqueda() {
+    document.getElementById('formSection').style.display = 'none';
+    document.getElementById('searchSection').style.display = 'block';
+    document.getElementById('dataframeSection').style.display = 'none';
+    consultarTalentos();
+}
+
+function mostrarDataframe() {
+    document.getElementById('formSection').style.display = 'none';
+    document.getElementById('searchSection').style.display = 'none';
+    document.getElementById('dataframeSection').style.display = 'block';
+    actualizarDataframe();
+}
+
+function actualizarDataframe() {
+    const talentos = JSON.parse(localStorage.getItem('talentos') || '[]');
+    const tbody = document.getElementById('dataframeBody');
+    tbody.innerHTML = '';
+
+    talentos.sort((a, b) => new Date(a.fechaVisita) - new Date(b.fechaVisita))
+           .forEach(talento => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${talento.nombre}</td>
+            <td>${talento.id}</td>
+            <td>${talento.telefono}</td>
+            <td>${talento.email}</td>
+            <td>${formatDate(talento.fechaVisita)}</td>
+            <td>${talento.pasos}</td>
+            <td>
+                <button onclick="eliminarTalento('${talento.id}')" class="delete-btn">
+                    Eliminar
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 
 function consultarTalentos() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -52,6 +99,7 @@ function consultarTalentos() {
             <p><strong>ID:</strong> ${talento.id}</p>
             <p><strong>Teléfono:</strong> ${talento.telefono}</p>
             <p><strong>Email:</strong> ${talento.email}</p>
+            <p><strong>Fecha de Visita:</strong> ${formatDate(talento.fechaVisita)}</p>
             <p><strong>Pasos Faltantes:</strong></p>
             <p>${talento.pasos}</p>
             <button onclick="eliminarTalento('${talento.id}')" class="delete-btn">
@@ -68,5 +116,11 @@ function eliminarTalento(id) {
         talentos = talentos.filter(t => t.id !== id);
         localStorage.setItem('talentos', JSON.stringify(talentos));
         consultarTalentos();
+        actualizarDataframe();
     }
+}
+
+function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('es-ES', options);
 }
